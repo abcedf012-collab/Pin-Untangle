@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Pin Untangle — Puzzle Tactile Mobile</title>
+  <style>
+    :root {
+      --bg: #F2F4F7;
+      --surface: #FFFFFF;
+      --border: #E2E8F0;
+      --ink: #0F172A;
+      --muted: #475569;
+      --blue: #2563EB;
+      --blue-dark: #1D4ED8;
+      --rose: #E11D48;
+      --amber: #D97706;
+      --emerald: #059669;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      touch-action: manipulation;
+    }
+
+    .topbar {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .topbar-inner {
+      max-width: 440px;
+      margin: 0 auto;
+      padding: 0 14px;
+      height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .brand {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+
+    .stats {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-variant-numeric: tabular-nums;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .sep {
+      width: 1px;
+      height: 16px;
+      background: var(--border);
+    }
+
+    .icon-btn {
+      min-width: 40px;
+      min-height: 40px;
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: var(--muted);
+    }
+
+    .icon-btn:hover {
+      background: #F1F5F9;
+      color: var(--ink);
+    }
+
+    .main {
+      width: 100%;
+      max-width: 420px;
+      padding: 12px 14px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .board-meta {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--muted);
+      gap: 8px;
+    }
+
+    .board-meta strong {
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .mini-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-mini {
+      min-height: 36px;
+      padding: 6px 10px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-mini.hint {
+      background: #EFF6FF;
+      border-color: #BFDBFE;
+      color: var(--blue-dark);
+    }
+
+    .btn-mini:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .board-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 360 / 500;
+      background: var(--surface);
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      box-shadow: 0 14px 36px -12px rgba(15, 23, 42, 0.16);
+      overflow: hidden;
+    }
+
+    .board-wrap.shake {
+      animation: boardShake 280ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+    }
+
+    @keyframes boardShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .toast {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #FFFFFF;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 150ms ease;
+      z-index: 10;
+    }
+
+    .toast.show { opacity: 1; }
+    .toast.error { background: var(--rose); }
+    .toast.success { background: var(--emerald); }
+    .toast.info { background: var(--ink); }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.62);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 15;
+    }
+
+    .overlay.open {
+      display: flex;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 320px;
+      background: var(--surface);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      padding: 22px;
+      text-align: center;
+      box-shadow: 0 20px 40px -12px rgba(15, 23, 42, 0.35);
+    }
+
+    .modal-card h2 {
+      margin: 0 0 6px;
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .modal-card p {
+      margin: 0 0 16px;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .actions-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .action-tile {
+      min-height: 54px;
+      padding: 8px 6px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      font-family: inherit;
+    }
+
+    .action-tile:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .action-tile strong {
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    .action-tile span {
+      font-size: 11px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .btn-primary {
+      width: 100%;
+      min-height: 46px;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 12px;
+      background: var(--blue);
+      color: #FFFFFF;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .btn-primary.center {
+      justify-content: center;
+    }
+
+    .btn-primary.dark {
+      background: var(--ink);
+    }
+
+    .btn-primary.amber {
+      background: #FFFBEB;
+      color: #78350F;
+      border: 1px solid #FDE68A;
+    }
+
+    .btn-primary.emerald {
+      background: var(--emerald);
+    }
+
+    .btn-primary:disabled {
+      background: #E2E8F0;
+      color: #64748B;
+      border-color: transparent;
+      cursor: not-allowed;
+    }
+
+    .btn-ghost {
+      width: 100%;
+      min-height: 42px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .btn-ghost:hover {
+      background: #F1F5F9;
+      color: var(--ink);
+    }
+
+    .global-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+
+    .global-modal.open {
+      display: flex;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 10px;
+      background: #F1F5F9;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--blue);
+      transition: width 100ms linear;
+    }
+
+    .rules-note {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .rules-note strong {
+      color: var(--ink);
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Pin Untangle</div>
+      <div class="stats">
+        <div class="stat-item">
+          <span class="stat-label">Niv.</span>
+          <span id="stat-level">1</span>
+        </div>
+        <div class="sep"></div>
+        <div class="stat-item">
+          <span aria-hidden="true">🪙</span>
+          <span id="stat-coins">60</span>
+        </div>
+        <div class="sep"></div>
+        <div class="stat-item">
+          <span aria-hidden="true">❤️</span>
+          <span id="stat-lives">5/5</span>
+        </div>
+      </div>
+      <button id="btn-mute" class="icon-btn" type="button" aria-label="Couper ou activer le son">🔊</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="board-meta">
+      <div>
+        Quilles : <strong id="meta-remaining">0/0</strong> · Risque : <strong id="meta-risk">Modéré</strong>
+      </div>
+      <div class="mini-actions">
+        <button id="btn-hint" class="btn-mini hint" type="button">Indice (15)</button>
+        <button id="btn-reset-board" class="btn-mini" type="button" title="Réinitialiser la disposition">↻</button>
+      </div>
+    </div>
+
+    <div id="board-wrap" class="board-wrap">
+      <canvas id="game-canvas" aria-label="Plateau de jeu Pin Untangle"></canvas>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+      <!-- Victoire Niveau -->
+      <div id="overlay-win" class="overlay">
+        <div class="modal-card">
+          <h2>Niveau terminé !</h2>
+          <p id="win-desc">Toutes les quilles sont détachées.</p>
+          <button id="btn-next-level" class="btn-primary center" type="button">Niveau suivant</button>
+        </div>
+      </div>
+
+      <!-- Game Over -->
+      <div id="overlay-gameover" class="overlay">
+        <div class="modal-card">
+          <h2>Game Over</h2>
+          <p id="gameover-desc">Vous n’avez plus de vies. Choisissez une option de secours :</p>
+          <button id="go-buy-life" class="btn-primary dark" type="button">
+            <span>❤️ Racheter 1 vie</span>
+            <span>50 pièces</span>
+          </button>
+          <button id="go-watch-ad" class="btn-primary" type="button">
+            <span>📺 Pub secours (+2 vies)</span>
+            <span id="go-ad-count">3/3</span>
+          </button>
+          <button id="go-earn-coins" class="btn-primary amber" type="button">
+            <span>🪙 Gagner des pièces</span>
+            <span>+30</span>
+          </button>
+          <button id="go-restart" class="btn-ghost" type="button">Recommencer au niveau 1</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions-grid">
+      <button id="btn-buy-life" class="action-tile" type="button">
+        <strong>❤️ +1 Vie</strong>
+        <span>50 pièces</span>
+      </button>
+      <button id="btn-watch-ad" class="action-tile" type="button">
+        <strong>📺 Pub +2 vies</strong>
+        <span id="ad-uses-label">Reste 3/3</span>
+      </button>
+      <button id="btn-earn-coins" class="action-tile" type="button">
+        <strong>🪙 +30 Pièces</strong>
+        <span>Bonus rapide</span>
+      </button>
+    </div>
+
+    <section class="rules-note">
+      <strong>Règle du jeu :</strong> Touchez les quilles dont la flèche pointe vers une sortie libre. Si une autre quille barre la trajectoire, le mouvement coince et vous perdez 1 vie.
+    </section>
+  </main>
+
+  <!-- Modale Pub / Bonus simulé -->
+  <div id="reward-modal" class="global-modal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h2 id="reward-title">Publicité en cours</h2>
+      <p id="reward-desc">Patientez quelques secondes…</p>
+      <div class="progress-track">
+        <div id="reward-progress" class="progress-fill"></div>
+      </div>
+      <button id="btn-claim-reward" class="btn-primary emerald center" type="button" disabled>
+        Déblocage…
+      </button>
+      <button id="btn-cancel-reward" class="btn-ghost" type="button">Annuler</button>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const BOARD_W = 360;
+      const BOARD_H = 500;
+      const PIN_RADIUS = 12;
+      const MAX_LIVES = 5;
+      const LIFE_COST = 50;
+      const MAX_AD_USES = 3;
+      const AD_DURATION_SEC = 5;
+      const AD_LIFE_REWARD = 2;
+      const COIN_DURATION_SEC = 3;
+      const COIN_REWARD = 30;
+      const HINT_COST = 15;
+      const STORAGE_KEY = 'pin_untangle_standalone_v1';
+
+      const PALETTE = [
+        { body: '#2563EB', head: '#1D4ED8', border: '#1E40AF' },
+        { body: '#E11D48', head: '#BE123C', border: '#9F1239' },
+        { body: '#D97706', head: '#B45309', border: '#92400E' },
+        { body: '#059669', head: '#047857', border: '#065F46' },
+        { body: '#7C3AED', head: '#6D28D9', border: '#5B21B6' },
+        { body: '#0D9488', head: '#0F766E', border: '#115E59' }
+      ];
+
+      let audioCtx = null;
+      let isMuted = false;
+
+      function getCtx() {
+        if (isMuted) return null;
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) audioCtx = new AC();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+        }
+        return audioCtx;
+      }
+
+      function playTone(freqStart, freqEnd, duration, type, volume) {
+        const ctx = getCtx();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.setValueAtTime(freqStart, now);
+        if (freqEnd !== freqStart) {
+          osc.frequency.exponentialRampToValueAtTime(freqEnd, now + duration);
+        }
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(volume || 0.12, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration + 0.02);
+      }
+
+      function getEndpoints(pin, extraOffset) {
+        const off = extraOffset || 0;
+        const dx = Math.cos(pin.angle);
+        const dy = Math.sin(pin.angle);
+        return {
+          a: { x: pin.x + dx * off, y: pin.y + dy * off },
+          b: { x: pin.x + dx * (pin.length + off), y: pin.y + dy * (pin.length + off) }
+        };
+      }
+
+      function pointSegDistSq(p, a, b) {
+        const vx = b.x - a.x;
+        const vy = b.y - a.y;
+        const wx = p.x - a.x;
+        const wy = p.y - a.y;
+        const lenSq = vx * vx + vy * vy;
+        if (lenSq === 0) return wx * wx + wy * wy;
+        const t = Math.max(0, Math.min(1, (wx * vx + wy * vy) / lenSq));
+        const px = a.x + t * vx - p.x;
+        const py = a.y + t * vy - p.y;
+        return px * px + py * py;
+      }
+
+      function segSegDistSq(p1, p2, q1, q2) {
+        const uX = p2.x - p1.x, uY = p2.y - p1.y;
+        const vX = q2.x - q1.x, vY = q2.y - q1.y;
+        const wX = p1.x - q1.x, wY = p1.y - q1.y;
+        const a = uX * uX + uY * uY;
+        const b = uX * vX + uY * vY;
+        const c = vX * vX + vY * vY;
+        const d = uX * wX + uY * wY;
+        const e = vX * wX + vY * wY;
+        const D = a * c - b * b;
+        let sN, sD = D, tN, tD = D;
+        const EPS = 1e-6;
+        if (D < EPS) {
+          sN = 0; sD = 1; tN = e; tD = c;
+        } else {
+          sN = b * e - c * d;
+          tN = a * e - b * d;
+          if (sN < 0) { sN = 0; tN = e; tD = c; }
+          else if (sN > sD) { sN = sD; tN = e + b; tD = c; }
+        }
+        if (tN < 0) {
+          tN = 0;
+          if (-d < 0) sN = 0;
+          else if (-d > a) sN = sD;
+          else { sN = -d; sD = a; }
+        } else if (tN > tD) {
+          tN = tD;
+          if (-d + b < 0) sN = 0;
+          else if (-d + b > a) sN = sD;
+          else { sN = -d + b; sD = a; }
+        }
+        const sc = Math.abs(sN) < EPS ? 0 : sN / sD;
+        const tc = Math.abs(tN) < EPS ? 0 : tN / tD;
+        const dX = wX + sc * uX - tc * vX;
+        const dY = wY + sc * uY - tc * vY;
+        return dX * dX + dY * dY;
+      }
+
+      function findBlockingPin(pin, others, step) {
+        const sweepStep = step || 3;
+        const MAX_EXIT = 620;
+        const dx = Math.cos(pin.angle);
+        const dy = Math.sin(pin.angle);
+        let earliest = null;
+
+        for (const other of others) {
+          if (other.id === pin.id || other.status === 'removed' || other.status === 'exiting') continue;
+          const minDist = pin.radius + other.radius - 1.5;
+          const minDistSq = minDist * minDist;
+          const otherSeg = getEndpoints(other, other.offset);
+          const upper = earliest ? earliest.hitDistance : MAX_EXIT;
+
+          for (let t = 0; t <= upper; t += sweepStep) {
+            const a = { x: pin.x + dx * (pin.offset + t), y: pin.y + dy * (pin.offset + t) };
+            const b = { x: pin.x + dx * (pin.length + pin.offset + t), y: pin.y + dy * (pin.length + pin.offset + t) };
+            if (segSegDistSq(a, b, otherSeg.a, otherSeg.b) < minDistSq) {
+              let lo = Math.max(0, t - sweepStep), hi = t;
+              for (let k = 0; k < 7; k++) {
+                const mid = (lo + hi) * 0.5;
+                const ma = { x: pin.x + dx * (pin.offset + mid), y: pin.y + dy * (pin.offset + mid) };
+                const mb = { x: pin.x + dx * (pin.length + pin.offset + mid), y: pin.y + dy * (pin.length + pin.offset + mid) };
+                if (segSegDistSq(ma, mb, otherSeg.a, otherSeg.b) < minDistSq) hi = mid;
+                else lo = mid;
+              }
+              const hitDist = Math.max(0, lo);
+              earliest = {
+                blockedById: other.id,
+                hitDistance: hitDist,
+                impactPoint: {
+                  x: pin.x + dx * (pin.length + pin.offset + hitDist),
+                  y: pin.y + dy * (pin.length + pin.offset + hitDist)
+                }
+              };
+              break;
+            }
+          }
+        }
+        return earliest;
+      }
+
+      function levelConfig(lvl) {
+        const targetPins = Math.min(22, 4 + Math.floor((lvl - 1) * 1.45));
+        const angleSteps = lvl <= 2 ? 4 : lvl <= 5 ? 8 : 12;
+        const minLen = lvl <= 3 ? 72 : 58;
+        const maxLen = lvl <= 3 ? 98 : 112;
+        const coinReward = 20 + Math.min(60, (lvl - 1) * 5);
+        let risk = 'Modéré';
+        if (lvl >= 3 && lvl <= 5) risk = 'Élevé';
+        else if (lvl >= 6 && lvl <= 9) risk = 'Complexe';
+        else if (lvl >= 10) risk = 'Expert';
+        return { targetPins, angleSteps, minLen, maxLen, coinReward, risk };
+      }
+
+      function generateLevel(lvl) {
+        const cfg = levelConfig(lvl);
+        const pad = 34;
+        const cx = BOARD_W / 2, cy = BOARD_H / 2;
+        const angles = [];
+        for (let i = 0; i < cfg.angleSteps; i++) angles.push((i * Math.PI * 2) / cfg.angleSteps);
+
+        let bestBoard = [];
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const placed = [];
+          for (let i = 0; i < cfg.targetPins; i++) {
+            let bestCand = null;
+            let bestScore = -Infinity;
+
+            for (let s = 0; s < 55; s++) {
+              const length = cfg.minLen + Math.random() * (cfg.maxLen - cfg.minLen);
+              const angle = angles[Math.floor(Math.random() * angles.length)];
+              const dx = Math.cos(angle), dy = Math.sin(angle);
+              const spread = Math.min(1, 0.55 + placed.length * 0.04);
+              const midX = cx + (Math.random() * 2 - 1) * (BOARD_W * 0.5 - pad) * spread;
+              const midY = cy + (Math.random() * 2 - 1) * (BOARD_H * 0.5 - pad) * spread;
+              const x = midX - dx * length * 0.5;
+              const y = midY - dy * length * 0.5;
+              const hx = x + dx * length, hy = y + dy * length;
+              if (x < pad || x > BOARD_W - pad || y < pad || y > BOARD_H - pad ||
+                  hx < pad || hx > BOARD_W - pad || hy < pad || hy > BOARD_H - pad) continue;
+
+              const cand = {
+                id: i + 1, x, y, angle, length, radius: PIN_RADIUS,
+                colorIndex: i % PALETTE.length, offset: 0, status: 'idle',
+                bounceProgress: 0, bounceMax: 0, flashTimer: 0
+              };
+              const cSeg = getEndpoints(cand);
+              const restSq = Math.pow(PIN_RADIUS * 2 + 7, 2);
+              let overlaps = false;
+              for (const ex of placed) {
+                const eSeg = getEndpoints(ex);
+                if (segSegDistSq(cSeg.a, cSeg.b, eSeg.a, eSeg.b) < restSq) {
+                  overlaps = true; break;
+                }
+              }
+              if (overlaps) continue;
+              if (findBlockingPin(cand, placed, 6) !== null) continue;
+
+              let blocksCount = 0;
+              for (const ex of placed) {
+                if (findBlockingPin(ex, [cand], 8) !== null) blocksCount++;
+              }
+              const distCenter = Math.hypot(midX - cx, midY - cy);
+              const score = blocksCount * (lvl <= 2 ? 12 : 24) - distCenter * 0.08 + Math.random() * 2;
+              if (score > bestScore) { bestScore = score; bestCand = cand; }
+              if (blocksCount >= (lvl >= 5 ? 2 : 1) && distCenter < 110) break;
+            }
+            if (bestCand) placed.push(bestCand);
+          }
+          if (placed.length > bestBoard.length) bestBoard = placed;
+          if (bestBoard.length >= Math.max(4, cfg.targetPins - 1)) break;
+        }
+        const offsetColor = Math.floor(Math.random() * PALETTE.length);
+        return bestBoard.map((p, idx) => ({ ...p, colorIndex: (idx + offsetColor) % PALETTE.length }));
+      }
+
+      const state = {
+        level: 1,
+        coins: 60,
+        lives: MAX_LIVES,
+        adUsesLeft: MAX_AD_USES,
+        pins: [],
+        phase: 'PLAYING',
+        hintPinId: null,
+        combo: 0,
+        sparks: [],
+        reward: null
+      };
+
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        if (saved) {
+          state.level = Math.max(1, saved.level || 1);
+          state.coins = Math.max(0, saved.coins ?? 60);
+          state.lives = Math.max(0, Math.min(MAX_LIVES, saved.lives ?? MAX_LIVES));
+          state.adUsesLeft = Math.max(0, Math.min(MAX_AD_USES, saved.adUsesLeft ?? MAX_AD_USES));
+          if (state.lives === 0) state.phase = 'GAME_OVER';
+        }
+      } catch {}
+
+      function save() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            level: state.level,
+            coins: state.coins,
+            lives: state.lives,
+            adUsesLeft: state.adUsesLeft
+          }));
+        } catch {}
+      }
+
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas.getContext('2d');
+      const boardWrap = document.getElementById('board-wrap');
+      const toastEl = document.getElementById('toast');
+      const overlayWin = document.getElementById('overlay-win');
+      const overlayGO = document.getElementById('overlay-gameover');
+      const rewardModal = document.getElementById('reward-modal');
+      const rewardTitle = document.getElementById('reward-title');
+      const rewardDesc = document.getElementById('reward-desc');
+      const rewardProgress = document.getElementById('reward-progress');
+      const btnClaimReward = document.getElementById('btn-claim-reward');
+      const btnCancelReward = document.getElementById('btn-cancel-reward');
+
+      let toastTimer = null;
+      function showToast(msg, tone) {
+        if (toastTimer) clearTimeout(toastTimer);
+        toastEl.textContent = msg;
+        toastEl.className = 'toast show ' + tone;
+        toastTimer = setTimeout(() => { toastEl.className = 'toast'; }, 2000);
+      }
+
+      function syncUI() {
+        const cfg = levelConfig(state.level);
+        const remaining = state.pins.filter(p => p.status !== 'removed').length;
+        document.getElementById('stat-level').textContent = state.level;
+        document.getElementById('stat-coins').textContent = state.coins;
+        document.getElementById('stat-lives').textContent = state.lives + '/' + MAX_LIVES;
+        document.getElementById('meta-remaining').textContent = remaining + '/' + state.pins.length;
+        document.getElementById('meta-risk').textContent = cfg.risk;
+        document.getElementById('ad-uses-label').textContent = 'Reste ' + state.adUsesLeft + '/' + MAX_AD_USES;
+        document.getElementById('go-ad-count').textContent = state.adUsesLeft + '/' + MAX_AD_USES;
+
+        document.getElementById('btn-hint').disabled = state.phase !== 'PLAYING' || state.coins < HINT_COST;
+        document.getElementById('btn-reset-board').disabled = state.phase !== 'PLAYING';
+
+        const cantBuy = state.coins < LIFE_COST || state.lives >= MAX_LIVES;
+        const cantAd = state.adUsesLeft <= 0 || state.lives >= MAX_LIVES;
+        document.getElementById('btn-buy-life').disabled = cantBuy;
+        document.getElementById('btn-watch-ad').disabled = cantAd;
+        document.getElementById('go-buy-life').disabled = state.coins < LIFE_COST;
+        document.getElementById('go-watch-ad').disabled = state.adUsesLeft <= 0;
+
+        overlayWin.classList.toggle('open', state.phase === 'LEVEL_CLEAR');
+        overlayGO.classList.toggle('open', state.phase === 'GAME_OVER');
+        save();
+      }
+
+      function startLevel(lvl) {
+        state.level = lvl;
+        state.pins = generateLevel(lvl);
+        state.hintPinId = null;
+        state.combo = 0;
+        if (state.lives > 0) state.phase = 'PLAYING';
+        syncUI();
+      }
+
+      canvas.addEventListener('pointerdown', (e) => {
+        if (state.phase !== 'PLAYING' || state.reward) return;
+        const rect = canvas.getBoundingClientRect();
+        const pt = {
+          x: ((e.clientX - rect.left) / rect.width) * BOARD_W,
+          y: ((e.clientY - rect.top) / rect.height) * BOARD_H
+        };
+
+        let tapped = null;
+        let bestDist = Infinity;
+        const hitSq = 22 * 22;
+        for (let i = state.pins.length - 1; i >= 0; i--) {
+          const pin = state.pins[i];
+          if (pin.status !== 'idle') continue;
+          const seg = getEndpoints(pin, pin.offset);
+          const dSq = pointSegDistSq(pt, seg.a, seg.b);
+          if (dSq <= hitSq && dSq < bestDist) {
+            bestDist = dSq;
+            tapped = pin;
+          }
+        }
+        if (!tapped) return;
+
+        const block = findBlockingPin(tapped, state.pins, 3);
+        if (!block) {
+          tapped.status = 'exiting';
+          state.combo++;
+          playTone(420 + Math.min(state.combo, 8) * 45, 680 + Math.min(state.combo, 8) * 50, 0.15, 'sine', 0.14);
+          if (state.hintPinId === tapped.id) state.hintPinId = null;
+        } else {
+          state.combo = 0;
+          tapped.status = 'bouncing';
+          tapped.bounceProgress = 0;
+          tapped.bounceMax = Math.max(10, Math.min(28, block.hitDistance));
+          tapped.flashTimer = 0.36;
+          const blocker = state.pins.find(p => p.id === block.blockedById);
+          if (blocker) blocker.flashTimer = 0.36;
+          state.sparks.push({ x: block.impactPoint.x, y: block.impactPoint.y, life: 0.36, maxLife: 0.36 });
+          boardWrap.classList.remove('shake');
+          void boardWrap.offsetWidth;
+          boardWrap.classList.add('shake');
+          playTone(190, 75, 0.18, 'triangle', 0.18);
+
+          state.lives = Math.max(0, state.lives - 1);
+          if (state.lives === 0) {
+            state.phase = 'GAME_OVER';
+            playTone(260, 140, 0.35, 'sawtooth', 0.08);
+          } else {
+            showToast('Quille bloquée ! -1 vie', 'error');
+          }
+          syncUI();
+        }
+      });
+
+      function buyLife() {
+        if (state.coins < LIFE_COST || state.lives >= MAX_LIVES) return;
+        state.coins -= LIFE_COST;
+        state.lives = Math.min(MAX_LIVES, state.lives + 1);
+        if (state.phase === 'GAME_OVER') state.phase = 'PLAYING';
+        playTone(660, 990, 0.18, 'triangle', 0.12);
+        showToast('+1 vie achetée !', 'success');
+        syncUI();
+      }
+
+      let rewardInterval = null;
+      function openReward(type) {
+        if (state.reward) return;
+        if (type === 'AD' && (state.adUsesLeft <= 0 || state.lives >= MAX_LIVES)) return;
+        const total = type === 'AD' ? AD_DURATION_SEC : COIN_DURATION_SEC;
+        state.reward = { type, total, elapsed: 0 };
+        rewardTitle.textContent = type === 'AD' ? 'Publicité sponsorisée en cours' : 'Bonus de pièces en cours';
+        rewardProgress.style.width = '0%';
+        rewardProgress.style.background = type === 'AD' ? '#2563EB' : '#D97706';
+        btnClaimReward.disabled = true;
+        btnCancelReward.style.display = 'block';
+        rewardModal.classList.add('open');
+
+        rewardInterval = setInterval(() => {
+          if (!state.reward) return;
+          state.reward.elapsed = Math.min(state.reward.total, state.reward.elapsed + 0.1);
+          const pct = Math.round((state.reward.elapsed / state.reward.total) * 100);
+          const left = Math.max(0, Math.ceil(state.reward.total - state.reward.elapsed));
+          rewardProgress.style.width = pct + '%';
+
+          if (state.reward.elapsed >= state.reward.total) {
+            clearInterval(rewardInterval);
+            rewardDesc.textContent = state.reward.type === 'AD'
+              ? 'Merci ! Vous pouvez récupérer +2 vies.'
+              : 'Votre coffre de +30 pièces est prêt !';
+            btnClaimReward.disabled = false;
+            btnClaimReward.textContent = state.reward.type === 'AD' ? 'Récupérer +2 vies' : 'Encaisser +30 pièces';
+            btnCancelReward.style.display = 'none';
+          } else {
+            rewardDesc.textContent = 'Patientez ' + left + ' seconde' + (left > 1 ? 's' : '') + '…';
+            btnClaimReward.textContent = 'Déblocage dans ' + left + 's…';
+          }
+        }, 100);
+      }
+
+      btnClaimReward.addEventListener('click', () => {
+        if (!state.reward || state.reward.elapsed < state.reward.total) return;
+        if (state.reward.type === 'AD') {
+          state.adUsesLeft = Math.max(0, state.adUsesLeft - 1);
+          state.lives = Math.min(MAX_LIVES, state.lives + AD_LIFE_REWARD);
+          if (state.phase === 'GAME_OVER') state.phase = 'PLAYING';
+          showToast('+2 vies récupérées !', 'success');
+        } else {
+          state.coins += COIN_REWARD;
+          showToast('+30 pièces gagnées !', 'success');
+        }
+        playTone(660, 1046, 0.22, 'triangle', 0.12);
+        state.reward = null;
+        rewardModal.classList.remove('open');
+        syncUI();
+      });
+
+      btnCancelReward.addEventListener('click', () => {
+        if (rewardInterval) clearInterval(rewardInterval);
+        state.reward = null;
+        rewardModal.classList.remove('open');
+      });
+
+      document.getElementById('btn-buy-life').addEventListener('click', buyLife);
+      document.getElementById('go-buy-life').addEventListener('click', buyLife);
+      document.getElementById('btn-watch-ad').addEventListener('click', () => openReward('AD'));
+      document.getElementById('go-watch-ad').addEventListener('click', () => openReward('AD'));
+      document.getElementById('btn-earn-coins').addEventListener('click', () => openReward('COINS'));
+      document.getElementById('go-earn-coins').addEventListener('click', () => openReward('COINS'));
+
+      document.getElementById('btn-next-level').addEventListener('click', () => {
+        startLevel(state.level + 1);
+      });
+
+      document.getElementById('go-restart').addEventListener('click', () => {
+        state.coins = 60;
+        state.lives = MAX_LIVES;
+        state.adUsesLeft = MAX_AD_USES;
+        startLevel(1);
+      });
+
+      document.getElementById('btn-reset-board').addEventListener('click', () => {
+        if (state.phase !== 'PLAYING') return;
+        startLevel(state.level);
+        showToast('Plateau réinitialisé', 'info');
+      });
+
+      document.getElementById('btn-hint').addEventListener('click', () => {
+        if (state.phase !== 'PLAYING' || state.coins < HINT_COST) return;
+        const active = state.pins.filter(p => p.status !== 'removed' && p.status !== 'exiting');
+        const freePin = active.find(p => !findBlockingPin(p, active, 4));
+        if (freePin) {
+          state.coins -= HINT_COST;
+          state.hintPinId = freePin.id;
+          showToast('Quille libre mise en évidence', 'info');
+          syncUI();
+        }
+      });
+
+      document.getElementById('btn-mute').addEventListener('click', (e) => {
+        isMuted = !isMuted;
+        e.currentTarget.textContent = isMuted ? '🔇' : '🔊';
+      });
+
+      let lastTime = performance.now();
+      function frame(now) {
+        const dt = Math.min(0.05, (now - lastTime) / 1000);
+        lastTime = now;
+
+        let removedNow = false;
+        for (const pin of state.pins) {
+          if (pin.flashTimer > 0) pin.flashTimer = Math.max(0, pin.flashTimer - dt);
+          if (pin.status === 'exiting') {
+            pin.offset += 820 * dt;
+            if (pin.offset > 470) {
+              pin.status = 'removed';
+              removedNow = true;
+            }
+          } else if (pin.status === 'bouncing') {
+            pin.bounceProgress += dt / 0.24;
+            if (pin.bounceProgress >= 1) {
+              pin.bounceProgress = 0; pin.offset = 0; pin.status = 'idle';
+            } else {
+              pin.offset = Math.sin(pin.bounceProgress * Math.PI) * pin.bounceMax;
+            }
+          }
+        }
+
+        if (removedNow) {
+          const left = state.pins.filter(p => p.status !== 'removed').length;
+          if (left === 0 && state.phase === 'PLAYING') {
+            const reward = levelConfig(state.level).coinReward;
+            state.coins += reward;
+            state.phase = 'LEVEL_CLEAR';
+            document.getElementById('win-desc').textContent = 'Bravo ! Vous gagnez +' + reward + ' pièces.';
+            playTone(523.25, 1046.5, 0.32, 'sine', 0.14);
+          }
+          syncUI();
+        }
+
+        state.sparks = state.sparks.map(s => ({ ...s, life: s.life - dt })).filter(s => s.life > 0);
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+        const tw = Math.round(BOARD_W * dpr), th = Math.round(BOARD_H * dpr);
+        if (canvas.width !== tw || canvas.height !== th) {
+          canvas.width = tw; canvas.height = th;
+        }
+
+        ctx.save();
+        ctx.scale(dpr, dpr);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, BOARD_W, BOARD_H);
+
+        ctx.fillStyle = '#E2E8F0';
+        for (let gx = 24; gx < BOARD_W; gx += 24) {
+          for (let gy = 24; gy < BOARD_H; gy += 24) {
+            ctx.beginPath();
+            ctx.arc(gx, gy, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        for (const pin of state.pins) {
+          if (pin.status === 'removed') continue;
+          const theme = PALETTE[pin.colorIndex % PALETTE.length];
+          const seg = getEndpoints(pin, pin.offset);
+          const dx = Math.cos(pin.angle), dy = Math.sin(pin.angle);
+          const r = pin.radius;
+          const midX = (seg.a.x + seg.b.x) * 0.5, midY = (seg.a.y + seg.b.y) * 0.5;
+          const out = Math.max(0, -midX, midX - BOARD_W, -midY, midY - BOARD_H);
+          const alpha = Math.max(0, 1 - out / 110);
+          if (alpha <= 0.01) continue;
+
+          ctx.save();
+          ctx.globalAlpha = alpha;
+
+          if (state.hintPinId === pin.id && pin.status === 'idle') {
+            const pulse = 0.5 + 0.5 * Math.sin(now * 0.007);
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = 'rgba(37, 99, 235, ' + (0.28 + pulse * 0.35) + ')';
+            ctx.lineWidth = r * 2 + 12;
+            ctx.beginPath(); ctx.moveTo(seg.a.x, seg.a.y); ctx.lineTo(seg.b.x, seg.b.y); ctx.stroke();
+          }
+
+          ctx.lineCap = 'round';
+          ctx.strokeStyle = 'rgba(15, 23, 42, 0.14)';
+          ctx.lineWidth = r * 2;
+          ctx.beginPath(); ctx.moveTo(seg.a.x, seg.a.y + 4); ctx.lineTo(seg.b.x, seg.b.y + 4); ctx.stroke();
+
+          ctx.strokeStyle = pin.flashTimer > 0 ? '#DC2626' : theme.border;
+          ctx.lineWidth = r * 2 + 2.5;
+          ctx.beginPath(); ctx.moveTo(seg.a.x, seg.a.y); ctx.lineTo(seg.b.x, seg.b.y); ctx.stroke();
+
+          ctx.strokeStyle = pin.flashTimer > 0 ? '#EF4444' : theme.body;
+          ctx.lineWidth = r * 2;
+          ctx.beginPath(); ctx.moveTo(seg.a.x, seg.a.y); ctx.lineTo(seg.b.x, seg.b.y); ctx.stroke();
+
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.32)';
+          ctx.lineWidth = 4;
+          const px = -dy * (r * 0.35), py = dx * (r * 0.35);
+          ctx.beginPath(); ctx.moveTo(seg.a.x + px, seg.a.y + py); ctx.lineTo(seg.b.x + px, seg.b.y + py); ctx.stroke();
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+          ctx.beginPath(); ctx.arc(seg.a.x, seg.a.y, 3.2, 0, Math.PI * 2); ctx.fill();
+
+          ctx.save();
+          ctx.translate(seg.b.x, seg.b.y);
+          ctx.rotate(pin.angle);
+          ctx.fillStyle = pin.flashTimer > 0 ? '#B91C1C' : theme.head;
+          ctx.beginPath(); ctx.arc(0, 0, r - 1.5, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 2.6;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.beginPath(); ctx.moveTo(-3.5, -5); ctx.lineTo(3.5, 0); ctx.lineTo(-3.5, 5); ctx.stroke();
+          ctx.restore();
+
+          ctx.restore();
+        }
+
+        for (const s of state.sparks) {
+          const p = 1 - s.life / s.maxLife;
+          const rad = 8 + p * 26;
+          const op = Math.max(0, 1 - p);
+          ctx.strokeStyle = 'rgba(220, 38, 38, ' + op + ')';
+          ctx.lineWidth = 3 * (1 - p * 0.5);
+          ctx.beginPath(); ctx.arc(s.x, s.y, rad, 0, Math.PI * 2); ctx.stroke();
+        }
+
+        ctx.restore();
+        requestAnimationFrame(frame);
+      }
+
+      startLevel(state.level);
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>
